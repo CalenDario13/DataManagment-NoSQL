@@ -140,9 +140,10 @@ q1 = ords_col.aggregate([
                 'tot_purchases':{'$first': '$tot_purchases'},
                 'city':{'$first': '$city'},
                 'state':{'$first': '$state'}}},
-    {'$project': {'_id': 0, 'customer_unique_id': '$_id', 'city': '$city', 'state':'$state',
+    {'$project': {'_id': 0, 'customer_unique_id': '$_id', 'state':'$state', 'city': '$city',
                   'tot_purchases': '$tot_purchases', 'tot_spendings': '$tot_spendings'}},
-    {'$sort': {"tot_purchases": -1, "tot_spendings": -1}}
+    {'$sort': {"tot_purchases": -1, "tot_spendings": -1}},
+    {'$limit': 10}
     ])
 
 q1_df = m.query(q1, prnt = True)
@@ -166,7 +167,7 @@ q3 = ords_col.aggregate([
     {"$project":{"_id":0, "product_category_name":"$_id", 
                 "product_id":{"$arrayElemAt":["$products",{"$indexOfArray":["$purchases", "$max_purchase"]}]}, 
                 "tot_sales":"$max_purchase",
-                "avg_score":{"$arrayElemAt":["$avg_review",{"$indexOfArray":["$purchases", "$max_purchase"]}]}}},
+                "avg_score": {'$round': [{"$arrayElemAt":["$avg_review",{"$indexOfArray":["$purchases", "$max_purchase"]}]}, 2]}}},
     {"$sort":{"product_category_name":1}}
     ])
 
@@ -198,7 +199,8 @@ q4 = ords_col.aggregate([
    {'$group': {'_id': '$category', 'tot_sales':{'$first': '$tot_sales'}, 'avg_price': {'$first':'$avg_price'}, 'avg_shipping_cost':{'$first':'$avg_shipping_cost'},
    'avg_installments': {'$avg': '$order_payments.payment_installments'}, 'avg_delivery_days': {'$first': '$avg_delivered_carrier_date'}}},
    {'$project': {'_id': 0, 'category': '$_id', 'tot_sales': '$tot_sales', 'avg_price': {'$round':['$avg_price', 0]}, 
-    'avg_installments': {'$round': ['$avg_installments',1]}, 'avg_cost_of_installment': {'$round':[{'$divide': ['$avg_price', '$avg_installments']},0]}, 
+    'avg_installments': {'$round': ['$avg_installments',1]}, 
+    'avg_cost_of_installment': {'$round':[{'$divide': [{'$round':['$avg_price', 0]}, {'$round':['$avg_installments',1]}]},0]}, 
     'avg_shipping_cost': {'$round':['$avg_shipping_cost',0]}, 'avg_delivery_days': {'$round': ['$avg_delivery_days',0]}}},
    {'$sort': {'category': 1}}
 ])
@@ -242,7 +244,8 @@ q2 = ords_col.aggregate([
                                 {'$multiply':['$avg_review',0.6]}]}, 
                                 2]}
                   }},            
-    {'$sort': { 'score': -1 }}
+    {'$sort': { 'score': -1 }},
+    {'$limit':10},
     
 ])
 
